@@ -1,0 +1,131 @@
+---
+title: "Ksenia Shafalovich HW1"
+format: html
+editor: visual
+---
+
+```{r}
+library(dplyr)
+library(readr)
+
+```
+
+```{r}
+data <- read.csv("C:\\Users\\Asus\\Desktop\\data\\archive\\Sales-Export_2019-2020.csv")
+str(data)
+```
+
+```{r}
+# Приводим столбцы к нужным типам данных
+# Удаляем запятую и столбце с ценой, которая разделяет тысячи
+data$order_value_EUR <- gsub(",", "", data$order_value_EUR) 
+# Из формата chr переводим в числовой формат num
+data$order_value_EUR <- as.double(data$order_value_EUR)
+# Дату из chr приводим к формату даты
+data$date <- as.Date(data$date,format = "%m/%d/%Y")
+# Переводим из текстового формата chr в факторный формат категориальные данные с определенными уровнями.
+data$country <- as.factor(data$country)
+data$category <- as.factor(data$category)
+data$sales_manager <- as.factor(data$sales_manager)
+data$sales_rep <- as.factor(data$sales_rep)
+data$device_type <- as.factor(data$device_type)
+# order_id является индивидуальным показателем и не требует сортировки, поэтому оставляем его в формате chr, customer_name в этом задании не требует сортировки, поэтому этот показатель тоже оставляем в формате chr
+str(data)
+print(data)
+```
+
+```{r}
+# Описание данных
+#Посчитайте количество заказов из каждой страны. Покажите список стран с количеством заказов в порядке убывания.
+
+countries_orders <- data %>%
+# Группируем данные по столбцу country.
+  group_by(country) %>%
+# Создаем новый столбец order_count, который содержит количество строк в каждой группе (т.е. количество заказов для каждой страны).
+  summarise(order_count = n()) %>%
+# Упорядочиваем результаты по убыванию количества заказов  
+  arrange(desc(order_count))
+# Выводим первые 6 строк из результирующего фрейма данных countries_orders
+head(countries_orders)
+```
+
+```{r}
+# Сабсеттинг и подсчет среднего
+# Сделайте сабсет датасета, включив только заказы из Portugal, France и Sweden.
+# Посчитайте среднюю order_value_EUR для этого сабсета (среднее по всему сабсету и среднее по каждой стране).
+
+
+# Создаем сабсет датасета, включив только заказы из Portugal, France и Sweden
+subset_orders <- data[data$country %in% c("Portugal", "France", "Sweden"), ]
+
+# Рассчитываем среднее значение order_value_EUR для всего сабсета
+mean_order_value_total <- mean(subset_orders$order_value_EUR)
+
+# Рассчитываем среднее значение order_value_EUR для каждой страны
+mean_order_value_portugal <- mean(subset_orders[subset_orders$country == "Portugal", ]$order_value_EUR)
+mean_order_value_france <- mean(subset_orders[subset_orders$country == "France", ]$order_value_EUR)
+mean_order_value_sweden <- mean(subset_orders[subset_orders$country == "Sweden", ]$order_value_EUR)
+
+# Выводим результаты
+cat("Среднее значение order_value_EUR для всего сабсета:", mean_order_value_total, "\n")
+cat("Среднее значение order_value_EUR для Portugal:", mean_order_value_portugal, "\n")
+cat("Среднее значение order_value_EUR для France:", mean_order_value_france, "\n")
+cat("Среднее значение order_value_EUR для Sweden:", mean_order_value_sweden, "\n")
+```
+
+```{r}
+# Создание новой переменной и условные выражения
+# Посчитайте среднюю стоимость (cost) для всего датасета (не для сабсета).
+
+# Создайте новую переменную cost_level. Если стоимость заказа больше или равна средней стоимости по датасету, то cost_level должен быть “high”, если меньше — “low”. 
+
+# Рассчитываем среднюю стоимость для всего датасета
+mean_cost_total <- mean(data$cost)
+
+# Выводим результат
+cat("Средняя стоимость для всего датасета:", mean_cost_total, "\n")
+```
+
+```{r}
+# Считаем через цикл
+# Создаем пустой вектор для cost_level
+cost_level <- vector("character", length = nrow(data))
+
+# Заполняем cost_level в зависимости от стоимости заказа
+for (i in 1:nrow(data)) {
+    if (data$cost[i] >= mean_cost_total) {
+        cost_level[i] <- "high"
+    } else {
+        cost_level[i] <- "low"
+    }
+}
+
+# Добавляем cost_level к датафрейму 
+data$cost_level <- cost_level
+print(data)
+```
+
+```{r}
+# Считаем без использования цикла
+# Создаем переменную cost_level с помощью ifelse
+data$cost_level <- ifelse(data$cost >= mean_cost_total, "high", "low")
+print(data)
+```
+
+```{r}
+# Арифметические операции
+# Создайте новую переменную updated_value, в которой order_value_EUR повышается на 5% от cost.
+# Создание новой переменной updated_value
+data <- data %>%
+  mutate(updated_value = order_value_EUR + 0.05 * cost)
+
+# Проверка первых нескольких строк датасета с новой переменной
+head(data)
+```
+
+```{r}
+# Сохранение датасета
+# Сохраните датасет c новыми переменными в формате .tsv
+# Сохранение датасета в формате .tsv
+write.table(data, file = "C:\\Users\\Asus\\Downloads\\bioinfo\\my_data\\HW1\\Shafalovich_K.S_HW1.tsv", sep = "\t", row.names = FALSE)
+```
